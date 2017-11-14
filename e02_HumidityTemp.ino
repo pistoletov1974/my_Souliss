@@ -97,6 +97,7 @@ void setup()
 	Set_DigitalInput(LIGHT);
 	Set_Humidity_Setpoint(HUMISET);
 	
+	
 
 
 }
@@ -116,9 +117,9 @@ void loop()
 
 			// Just process communication as fast as the logics
 			ProcessCommunication();
-		//	DigInHoldCustom(5, Souliss_T1n_ToggleCmd, Souliss_T1n_OnCmd, LIGHT,10000);
-			DigIn(5, Souliss_T1n_OnCmd, FAN_HIGH);
-			//DigInHold(5, Souliss_T1n_OffCmd, Souliss_T1n_OnCmd, LIGHT);
+			DigInHoldCustom(5, Souliss_T1n_OffCmd, 150, FAN_HIGH,10000);
+			//DigIn(5, Souliss_T1n_OnCmd, FAN_HIGH);
+		//	DigInHold(5, Souliss_T1n_RstCmd, Souliss_T1n_Timed, FAN_HIGH);
 			
 
 			//LowDigIn(5, Souliss_T1n_OffCmd, LIGHT);
@@ -139,6 +140,7 @@ void loop()
 			Logic_Temperature(TEMP0);
 			DigOut(3, Souliss_T1n_Coil, FAN_LOW);
 			DigOut(9, Souliss_T1n_Coil, FAN_HIGH);	
+
 			
 
 		}
@@ -154,6 +156,7 @@ void loop()
 		FAST_510ms() {
 
 			Timer_SimpleLight(FAN_HIGH);
+		
 
 		}
 
@@ -171,7 +174,7 @@ void loop()
 			
 			
 			
-		// что имеем - если включен лайт то мигаем 
+
 			
 			Serial.print("LIGHT_STATUS=");
 			Serial.println(mInput(FAN_HIGH));
@@ -254,6 +257,7 @@ void loop()
 				Serial.println(humidity);
 				Logic_Humidity(HUMIDITY);
 				Serial.println(Souliss_SinglePrecisionFloating(&mOutput((HUMIDITY))));
+				/*
 				mInput(FAN_HIGH) = Souliss_T1n_OnCmd;
 				Serial.println(mInput(FAN_HIGH));
 				Logic_SimpleLight(FAN_HIGH);
@@ -261,7 +265,7 @@ void loop()
 				mInput(FAN_HIGH) = Souliss_T1n_Timed;
 				Serial.println(mInput(FAN_HIGH));
 				mAuxiliary(FAN_HIGH) = 80;
-			
+			*/
 			//}
 
 				//
