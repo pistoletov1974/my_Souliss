@@ -60,9 +60,10 @@
 // DHT sensor
 DHT dht(DHTPIN, DHTTYPE); // for ESP8266 use dht(DHTPIN, DHTTYPE, 11)
 
-uint8_t ip_address[4] = { 192, 168, 1, 77 };
+uint8_t ip_address[4] = { 192, 168, 0, 77 };
 uint8_t subnet_mask[4] = { 255, 255, 255, 0 };
-uint8_t ip_gateway[4] = { 192, 168, 1, 1 };
+uint8_t ip_gateway[4] = { 192, 168, 0, 1 };
+uint8_t hour;
 
 float humidity = 0;
 float humidity_prev = 0;
@@ -96,6 +97,56 @@ void setup()
 	Set_SimpleLight(FAN_LOW);
 	Set_DigitalInput(LIGHT);
 	Set_Humidity_Setpoint(HUMISET);
+
+
+	//получаем время
+
+
+	sendNTPpacket(timeServer);
+
+	Serial.println("packet sent");
+
+	delay(3000);
+
+	if (Udp.parsePacket()) {
+		// We've received a packet, read the data from it
+		Udp.read(packetBuffer, NTP_PACKET_SIZE);
+		// read the packet into the buffer
+
+		// the timestamp starts at byte 40 of the received packet and is four bytes,
+		// or two words, long. First, extract the two words:
+
+		unsigned long highWord = word(packetBuffer[40], packetBuffer[41]);
+		unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);
+		// combine the four bytes (two words) into a long integer
+		// this is NTP time (seconds since Jan 1 1900):
+		unsigned long secsSince1900 = highWord << 16 | lowWord;
+		Serial.print("Seconds since Jan 1 1900 = ");
+		Serial.println(secsSince1900);
+
+		// now convert NTP time into everyday time:
+		Serial.print("Unix time = ");
+		// Unix time starts on Jan 1 1970. In seconds, that's 2208988800:
+		const unsigned long seventyYears = 2208988800UL;
+		// subtract seventy years:
+		unsigned long epoch = secsSince1900 - seventyYears;
+		// print Unix time:
+		Serial.println(epoch);
+
+
+		// print the hour, minute and second:
+		Serial.print("The houre is ");
+		// UTC is the time at Greenwich Meridian (GMT)
+		hour = (epoch % 86400L) / 3600;
+		// print the hour (86400 equals secs per day)
+		Serial.println(hour + 3);
+
+	}
+
+
+
+
+
 	
 	
 
@@ -170,119 +221,92 @@ void loop()
 
 		SLOW_10s() {
 
-		
-			
-			
-			
 
-			
+
+
+
+
+
 			Serial.print("LIGHT_STATUS=");
 			Serial.println(mInput(FAN_HIGH));
 			Serial.println(mOutput(FAN_HIGH));
 			Serial.println(mAuxiliary(FAN_HIGH));
-			
-			
-			sendNTPpacket(timeServer);
-
-			Serial.println("packet sent");
-
-			delay(1000);
-			
-			if (Udp.parsePacket()) {
-				// We've received a packet, read the data from it
-				Udp.read(packetBuffer, NTP_PACKET_SIZE);
-				// read the packet into the buffer
-
-				// the timestamp starts at byte 40 of the received packet and is four bytes,
-				// or two words, long. First, extract the two words:
-			
-				unsigned long highWord = word(packetBuffer[40], packetBuffer[41]);
-				unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);
-				// combine the four bytes (two words) into a long integer
-				// this is NTP time (seconds since Jan 1 1900):
-				unsigned long secsSince1900 = highWord << 16 | lowWord;
-				Serial.print("Seconds since Jan 1 1900 = ");
-				Serial.println(secsSince1900);
-
-				// now convert NTP time into everyday time:
-				Serial.print("Unix time = ");
-				// Unix time starts on Jan 1 1970. In seconds, that's 2208988800:
-				const unsigned long seventyYears = 2208988800UL;
-				// subtract seventy years:
-				unsigned long epoch = secsSince1900 - seventyYears;
-				// print Unix time:
-				Serial.println(epoch);
+			Serial.println(hour);
 
 
-				// print the hour, minute and second:
-				Serial.print("The UTC time is ");       // UTC is the time at Greenwich Meridian (GMT)
-				Serial.print((epoch % 86400L) / 3600); // print the hour (86400 equals secs per day)
-				Serial.print(':');
-				if (((epoch % 3600) / 60) < 10) {
-					// In the first 10 minutes of each hour, we'll want a leading '0'
-					Serial.print('0');
+		
+
+
+			SLOW_50s() {
+
+				humidity = dht.readHumidity();
+				float temperature = dht.readTemperature(false);
+				//if (!isnan(humidity) || !isnan(temperature)) {
+				ImportAnalog(HUMIDITY, &humidity);
+				ImportAnalog(TEMP0, &temperature);
+				Serial.println(temperature);
+				Serial.println(humidity);
+				Logic_Humidity(HUMIDITY);
+				Serial.println(Souliss_SinglePrecisionFloating(&mOutput((HUMIDITY))));
+
+			}
+
+
+			SLOW_30m() {
+
+
+				sendNTPpacket(timeServer);
+
+				Serial.println("packet sent");
+
+				delay(3000);
+
+				if (Udp.parsePacket()) {
+					// We've received a packet, read the data from it
+					Udp.read(packetBuffer, NTP_PACKET_SIZE);
+					// read the packet into the buffer
+
+					// the timestamp starts at byte 40 of the received packet and is four bytes,
+					// or two words, long. First, extract the two words:
+
+					unsigned long highWord = word(packetBuffer[40], packetBuffer[41]);
+					unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);
+					// combine the four bytes (two words) into a long integer
+					// this is NTP time (seconds since Jan 1 1900):
+					unsigned long secsSince1900 = highWord << 16 | lowWord;
+					Serial.print("Seconds since Jan 1 1900 = ");
+					Serial.println(secsSince1900);
+
+					// now convert NTP time into everyday time:
+					Serial.print("Unix time = ");
+					// Unix time starts on Jan 1 1970. In seconds, that's 2208988800:
+					const unsigned long seventyYears = 2208988800UL;
+					// subtract seventy years:
+					unsigned long epoch = secsSince1900 - seventyYears;
+					// print Unix time:
+					Serial.println(epoch);
+
+
+					// print the hour, minute and second:
+					Serial.print("The houre is ");
+					// UTC is the time at Greenwich Meridian (GMT)
+					 hour = (epoch % 86400L) / 3600+3;
+					// print the hour (86400 equals secs per day)
+					Serial.println(hour);
+
 				}
-				Serial.print((epoch % 3600) / 60); // print the minute (3600 equals secs per minute)
-				Serial.print(':');
-				if ((epoch % 60) < 10) {
-					// In the first 10 seconds of each minute, we'll want a leading '0'
-					Serial.print('0');
-				}
-				Serial.println(epoch % 60); // print the second
+
+
+
 			}
 
 
 
 
 
-
-
-
-
-
-
-
-
 		}
-
-
-		SLOW_50s() {
-		
-			 humidity = dht.readHumidity();
-			float temperature = dht.readTemperature(false);
-			//if (!isnan(humidity) || !isnan(temperature)) {
-				ImportAnalog(HUMIDITY, &humidity);
-				ImportAnalog(TEMP0, &temperature);
-				Serial.println("temp float");
-				Serial.println(humidity);
-				Logic_Humidity(HUMIDITY);
-				Serial.println(Souliss_SinglePrecisionFloating(&mOutput((HUMIDITY))));
-				/*
-				mInput(FAN_HIGH) = Souliss_T1n_OnCmd;
-				Serial.println(mInput(FAN_HIGH));
-				Logic_SimpleLight(FAN_HIGH);
-
-				mInput(FAN_HIGH) = Souliss_T1n_Timed;
-				Serial.println(mInput(FAN_HIGH));
-				mAuxiliary(FAN_HIGH) = 80;
-			*/
-			//}
-
-				//
-
-
-
-
-
-
-		}
-
-
-
-
 
 	}
-
 }
 
 
