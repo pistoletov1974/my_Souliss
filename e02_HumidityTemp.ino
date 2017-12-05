@@ -63,7 +63,9 @@ DHT dht(DHTPIN, DHTTYPE); // for ESP8266 use dht(DHTPIN, DHTTYPE, 11)
 uint8_t ip_address[4] = { 192, 168, 0, 77 };
 uint8_t subnet_mask[4] = { 255, 255, 255, 0 };
 uint8_t ip_gateway[4] = { 192, 168, 0, 1 };
-uint8_t hour;
+uint8_t hour=23;
+enum states {FAN_ON_HUMI, FAN_ON_LIGHT, FAN_OFF};
+states fan_state;
 
 float humidity = 0;
 float humidity_prev = 0;
@@ -168,7 +170,19 @@ void loop()
 
 			// Just process communication as fast as the logics
 			ProcessCommunication();
-			DigInHoldCustom(5, Souliss_T1n_OffCmd, 150, FAN_HIGH,10000);
+			// логика работы по свету если не включен от влажности то работаем по свету
+			if (fan_state!=FAN_ON_HUMI) {
+
+				if (hour > 7 && hour < 23) {
+					DigInHoldCustom(5, Souliss_T1n_OffCmd, 0x30 + 6 * 5, FAN_HIGH, 50000);
+				}
+
+				else DigInHoldCustom(5, Souliss_T1n_OffCmd, 0x30 + 6 * 5, FAN_LOW, 50000);
+			
+			}
+
+
+			
 			//DigIn(5, Souliss_T1n_OnCmd, FAN_HIGH);
 		//	DigInHold(5, Souliss_T1n_RstCmd, Souliss_T1n_Timed, FAN_HIGH);
 			
@@ -203,10 +217,12 @@ void loop()
 
 		}
 
-
-		FAST_510ms() {
+		// таймер  в 10 сек щелкает 
+		FAST_11110ms() {
 
 			Timer_SimpleLight(FAN_HIGH);
+			Timer_SimpleLight(FAN_LOW);
+
 		
 
 		}
@@ -248,6 +264,33 @@ void loop()
 				Serial.println(humidity);
 				Logic_Humidity(HUMIDITY);
 				Serial.println(Souliss_SinglePrecisionFloating(&mOutput((HUMIDITY))));
+				// high humidity
+				//если влажность больше 75% включаем на полную или половинку от времени суток
+				if (humidity > 75 && fan_state==FAN_OFF ) {
+					// day and use fan high
+					fan_state = FAN_ON_HUMI;
+					if (hour > 7 && hour < 23) {
+					
+						mInput(FAN_HIGH) = Souliss_T1n_OnCmd;
+						
+
+					}
+					else
+					{
+						mInput(FAN_LOW) = Souliss_T1n_OnCmd;
+						
+					}
+				}
+
+				//вентилятор работает но упало до 60  даем поработать тихим ходом 7 минут
+				if (humidity > 60 && fan_state == FAN_ON_HUMI) {
+					
+					mInput(FAN_HIGH) = Souliss_T1n_OffCmd;
+					mInput(FAN_LOW) = 0x30 + 6 *7;
+					fan_state = FAN_OFF;
+					// 7 минут
+				}
+
 
 			}
 
