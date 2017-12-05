@@ -203,7 +203,7 @@ void loop()
 			Logic_Humidity_Setpoint(HUMISET);
 			Logic_Humidity(HUMIDITY);
 			Logic_Temperature(TEMP0);
-			DigOut(3, Souliss_T1n_Coil, FAN_LOW);
+			DigOut(4, Souliss_T1n_Coil, FAN_LOW);
 			DigOut(9, Souliss_T1n_Coil, FAN_HIGH);	
 
 			
