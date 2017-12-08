@@ -269,6 +269,8 @@ void loop()
 				if (humidity > 75 && fan_state==FAN_OFF ) {
 					// day and use fan high
 					fan_state = FAN_ON_HUMI;
+					Serial.println(fan_state);
+
 					if (hour > 7 && hour < 23) {
 					
 						mInput(FAN_HIGH) = Souliss_T1n_OnCmd;
@@ -283,7 +285,7 @@ void loop()
 				}
 
 				//вентилятор работает но упало до 60  даем поработать тихим ходом 7 минут
-				if (humidity > 60 && fan_state == FAN_ON_HUMI) {
+				if (humidity < 60 && fan_state == FAN_ON_HUMI) {
 					
 					mInput(FAN_HIGH) = Souliss_T1n_OffCmd;
 					mInput(FAN_LOW) = 0x30 + 6 *7;
